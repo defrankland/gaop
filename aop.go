@@ -30,6 +30,20 @@ func (a *Aspect) AddPointcut(methodName string, adviceType string, i interface{}
 	if adviceType == "before" {
 		fn = func() {
 			a.advice.method()
+			reflect.ValueOf(i).MethodByName(methodName).Call(nil)
+		}
+	} else if adviceType == "after" {
+		fn = func() {
+			reflect.ValueOf(i).MethodByName(methodName).Call(nil)
+			a.advice.method()
+		}
+	} else if adviceType == "after-returning" {
+		fn = func() {
+			returnValues := reflect.ValueOf(i).MethodByName(methodName).Call(nil)
+			if !returnValues[0].IsNil() {
+				return
+			}
+			a.advice.method()
 			reflect.ValueOf(i).MethodByName("MyFunc").Call(nil)
 		}
 	}
