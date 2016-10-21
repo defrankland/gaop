@@ -20,8 +20,7 @@ func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType string) (err e
 	} else if adviceType == "" {
 		err = errors.New("cannot create advice: adviceType is invalid")
 	} else {
-		a.advice.Method.Func = ValueOf(adviceFunction)
-		a.advice.Method.Type = TypeOf(adviceFunction)
+		a.advice.Method = Method{Func: ValueOf(adviceFunction), Type: TypeOf(adviceFunction)}
 		a.advice.Type = adviceType
 	}
 	return
@@ -38,7 +37,7 @@ func (a *Aspect) AddPointcut(methodName string, adviceType string, i interface{}
 	} else if adviceType == "after" {
 		fn = func(args []Value) []Value {
 			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
-			a.advice.Method.Func.Call(args)
+			a.advice.Method.Func.Call(nil)
 			return returnValues
 		}
 	} else if adviceType == "after-returning" {
@@ -61,7 +60,7 @@ func (a *Aspect) AddPointcut(methodName string, adviceType string, i interface{}
 	return
 }
 
-func (a *Aspect) MakeJoin(fptr interface{}, pointcut func([]Value) []Value) {
+func (a *Aspect) Join(fptr interface{}, pointcut func([]Value) []Value) {
 
 	fn := ValueOf(fptr).Elem()
 	fn.Set(MakeFunc(fn.Type(), pointcut))

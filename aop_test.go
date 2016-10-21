@@ -3,6 +3,7 @@ package goaop_test
 import (
 	"errors"
 	goaop "goAop"
+	"math/rand"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -32,20 +33,20 @@ var _ = Describe("aop", func() {
 
 	Describe("aspects", func() {
 		Context("when creating an aspect", func() {
-			// It("returns an error when function is nil", func() {
-			// 	err := aspect.AddAdvice(nil, "before")
-			// 	Expect(err).To(MatchError("cannot create advice: adviceFunction is invalid"))
-			// })
-			//
-			// It("returns an error when adviceType is missing", func() {
-			// 	err := aspect.AddAdvice(beforeAdvice, "")
-			// 	Expect(err).To(MatchError("cannot create advice: adviceType is invalid"))
-			// })
-			//
-			// It("succeeds when function and advice type are valid", func() {
-			// 	err := aspect.AddAdvice(beforeAdvice, "before")
-			// 	Expect(err).ToNot(HaveOccurred())
-			// })
+			It("returns an error when function is nil", func() {
+				err := aspect.AddAdvice(nil, "before")
+				Expect(err).To(MatchError("cannot create advice: adviceFunction is invalid"))
+			})
+
+			It("returns an error when adviceType is missing", func() {
+				err := aspect.AddAdvice(beforeAdvice, "")
+				Expect(err).To(MatchError("cannot create advice: adviceType is invalid"))
+			})
+
+			It("succeeds when function and advice type are valid", func() {
+				err := aspect.AddAdvice(beforeAdvice, "before")
+				Expect(err).ToNot(HaveOccurred())
+			})
 		})
 	})
 
@@ -57,7 +58,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(beforeAdvice, "before")
 				fnV, _ := aspect.AddPointcut("MyFunc", "before", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				fn()
 
@@ -67,6 +68,23 @@ var _ = Describe("aop", func() {
 				Expect(idxBeforeMsg).To(BeNumerically("<", idxFuncMsg))
 				Expect(idxBeforeMsg).ToNot(BeNumerically("==", -1))
 			})
+
+			It("takes and returns correct values", func() {
+
+				t := T{}
+				fn := t.AddInts
+
+				aspect.AddAdvice(beforeAdvice, "before")
+				fnV, _ := aspect.AddPointcut("AddInts", "before", &t)
+				aspect.Join(&fn, fnV)
+
+				x := rand.Int()
+				y := rand.Int()
+
+				sum := fn(x, y)
+
+				Expect(sum).To(Equal(x + y))
+			})
 		})
 		Context("when a pointcut is registered with after advice type", func() {
 			It("is called before the after advice", func() {
@@ -75,7 +93,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(afterAdvice, "after")
 				fnV, _ := aspect.AddPointcut("MyFunc", "after", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				fn()
 
@@ -85,6 +103,21 @@ var _ = Describe("aop", func() {
 				Expect(idxAfterMsg).To(BeNumerically(">", idxFuncMsg))
 				Expect(idxAfterMsg).ToNot(BeNumerically("==", -1))
 			})
+			It("takes and returns correct values", func() {
+				t := T{}
+				fn := t.AddInts
+
+				aspect.AddAdvice(afterAdvice, "after")
+				fnV, _ := aspect.AddPointcut("AddInts", "after", &t)
+				aspect.Join(&fn, fnV)
+
+				x := rand.Int()
+				y := rand.Int()
+
+				sum := fn(x, y)
+
+				Expect(sum).To(Equal(x + y))
+			})
 		})
 		Context("when a pointcut is registered with after-returning advice type", func() {
 			It("is called if the function does not return an error", func() {
@@ -93,7 +126,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(afterAdvice, "after-returning")
 				fnV, _ := aspect.AddPointcut("MyFunc", "after-returning", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				fn()
 
@@ -108,7 +141,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(afterAdvice, "after-returning")
 				fnV, _ := aspect.AddPointcut("MyFuncErr", "after-returning", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				fn()
 
@@ -123,7 +156,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(afterAdvice, "after-returning")
 				fnV, _ := aspect.AddPointcut("MyFuncInt", "after-returning", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				fn()
 
@@ -138,7 +171,7 @@ var _ = Describe("aop", func() {
 
 				aspect.AddAdvice(afterAdvice, "after-returning")
 				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", "after-returning", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 				fn()
 
 				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
@@ -153,7 +186,7 @@ var _ = Describe("aop", func() {
 				aspect.AddAdvice(afterAdvice, "after-returning")
 
 				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", "after-returning", &t)
-				aspect.MakeJoin(&fn, fnV)
+				aspect.Join(&fn, fnV)
 
 				_, i, s, _, _ := fn()
 
@@ -163,6 +196,21 @@ var _ = Describe("aop", func() {
 				Expect(idxAfterReturningMsg).To(BeNumerically("==", -1))
 				Expect(i).To(Equal(5))
 				Expect(s).To(Equal("a string"))
+			})
+			It("takes the provided arguments", func() {
+				t := T{}
+				fn := t.AddInts
+
+				aspect.AddAdvice(afterAdvice, "after-returning")
+				fnV, _ := aspect.AddPointcut("AddInts", "after-returning", &t)
+				aspect.Join(&fn, fnV)
+
+				x := rand.Int()
+				y := rand.Int()
+
+				sum := fn(x, y)
+
+				Expect(sum).To(Equal(x + y))
 			})
 		})
 	})
@@ -195,4 +243,8 @@ func (t *T) MyFuncInt() int {
 func (t *T) MyFunc() error {
 	out += "this is my function"
 	return nil
+}
+
+func (t *T) AddInts(x int, y int) int {
+	return x + y
 }
