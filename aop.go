@@ -5,16 +5,24 @@ import (
 	. "reflect"
 )
 
+const (
+	ADVICE_BEFORE AopAdviceType = iota
+	ADVICE_AFTER
+	ADVICE_AFTER_RETURNING
+)
+
 var aspects []Aspect
+
+type AopAdviceType int
+
+type Aspect struct {
+	Name    string
+	advices []Advice
+}
 
 type Advice struct {
 	Method Method
-	Type   string
-}
-
-type Aspect struct {
-	Name   string
-	advice Advice
+	Type   AopAdviceType
 }
 
 func (a *Aspect) Create(aspectName string) (err error) {
@@ -50,34 +58,87 @@ func (a *Aspect) Index(aspectName string) int {
 	return -1
 }
 
-func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType string) (err error) {
+func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType AopAdviceType) (err error) {
+
 	if adviceFunction == nil {
+
 		err = errors.New("cannot create advice: adviceFunction is invalid")
-	} else if adviceType == "" {
+
+	} else if adviceType != ADVICE_BEFORE && adviceType != ADVICE_AFTER && adviceType != ADVICE_AFTER_RETURNING {
+
 		err = errors.New("cannot create advice: adviceType is invalid")
+
 	} else {
-		a.advice.Method = Method{Func: ValueOf(adviceFunction), Type: TypeOf(adviceFunction)}
-		a.advice.Type = adviceType
+
+		for _, advice := range a.advices {
+			if ValueOf(adviceFunction) == advice.Method.Func && adviceType == advice.Type {
+				return errors.New("cannot create advice: adviceFunction already added for adviceType")
+			}
+		}
+
+		a.advices = append(a.advices, Advice{
+			Method: Method{Func: ValueOf(adviceFunction), Type: TypeOf(adviceFunction)},
+			Type:   adviceType,
+		})
 	}
+
 	return
 }
 
-func (a *Aspect) AddPointcut(methodName string, adviceType string, i interface{}) (fn func(args []Value) []Value, err error) {
+func (a *Aspect) RemoveAdvice(adviceFunction interface{}, adviceType AopAdviceType) (err error) {
 
-	if adviceType == "before" {
+	i := a.GetAdviceIndex(adviceFunction, adviceType)
+
+	if i != -1 {
+		a.advices = append(a.advices[:i], a.advices[i+1:]...)
+		return
+	}
+
+	return errors.New("cannot delete advice: does not exist")
+}
+
+func (a *Aspect) GetAdviceIndex(adviceFunc interface{}, adviceType AopAdviceType) (index int) {
+
+	for i, advice := range a.advices {
+		if ValueOf(adviceFunc) == advice.Method.Func && adviceType == advice.Type {
+			return i
+		}
+	}
+
+	return -1
+}
+
+func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i interface{}) (fn func(args []Value) []Value, err error) {
+
+	if adviceType == ADVICE_BEFORE {
+
 		fn = func(args []Value) []Value {
-			a.advice.Method.Func.Call(nil)
+			for j, advice := range a.advices {
+				if advice.Type == ADVICE_BEFORE {
+					a.advices[j].Method.Func.Call(nil)
+				}
+			}
 			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
 			return returnValues
 		}
-	} else if adviceType == "after" {
+
+	} else if adviceType == ADVICE_AFTER {
+
 		fn = func(args []Value) []Value {
 			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
-			a.advice.Method.Func.Call(nil)
+
+			for j, advice := range a.advices {
+				if advice.Type == ADVICE_AFTER {
+					a.advices[j].Method.Func.Call(nil)
+				}
+			}
 			return returnValues
 		}
-	} else if adviceType == "after-returning" {
+
+	} else if adviceType == ADVICE_AFTER_RETURNING {
+
 		fn = func(args []Value) []Value {
+
 			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
 
 			for idx := 0; idx < len(returnValues); idx++ {
@@ -86,11 +147,15 @@ func (a *Aspect) AddPointcut(methodName string, adviceType string, i interface{}
 				}
 			}
 
-			a.advice.Method.Func.Call(nil)
-			ValueOf(i).MethodByName("MyFunc").Call(nil)
-			return returnValues
+			for j, advice := range a.advices {
+				if advice.Type == ADVICE_AFTER_RETURNING {
+					a.advices[j].Method.Func.Call(nil)
+				}
+			}
 
+			return returnValues
 		}
+
 	}
 
 	return
