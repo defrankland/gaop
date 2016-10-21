@@ -5,13 +5,49 @@ import (
 	. "reflect"
 )
 
+var aspects []Aspect
+
 type Advice struct {
 	Method Method
 	Type   string
 }
 
 type Aspect struct {
+	Name   string
 	advice Advice
+}
+
+func (a *Aspect) Create(aspectName string) (err error) {
+
+	if a.Index(aspectName) != -1 {
+		return errors.New("cannot create aspect: name already used")
+	}
+
+	a.Name = aspectName
+	aspects = append(aspects, *a)
+
+	return
+}
+
+func (a *Aspect) Remove(aspectName string) (err error) {
+
+	i := a.Index(aspectName)
+
+	if i != -1 {
+		aspects = append(aspects[:i], aspects[i+1:]...)
+		return
+	}
+	return errors.New("cannot delete aspect: does not exist")
+}
+
+func (a *Aspect) Index(aspectName string) int {
+
+	for i, aspect := range aspects {
+		if aspectName == aspect.Name {
+			return i
+		}
+	}
+	return -1
 }
 
 func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType string) (err error) {

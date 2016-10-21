@@ -26,6 +26,7 @@ var _ = Describe("aop", func() {
 	var (
 		aspect goaop.Aspect
 	)
+
 	BeforeEach(func() {
 		aspect = goaop.Aspect{}
 		out = ""
@@ -33,6 +34,36 @@ var _ = Describe("aop", func() {
 
 	Describe("aspects", func() {
 		Context("when creating an aspect", func() {
+			It("returns no error if aspect doesnt match the name of an existing aspect", func() {
+				err := aspect.Create("myAspect1")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns error if already exists", func() {
+
+				err := aspect.Create("myAspect1")
+				err = aspect.Create("myAspect1")
+
+				Expect(err).To(MatchError("cannot create aspect: name already used"))
+			})
+
+			It("can be removed if it exists", func() {
+
+				err := aspect.Create("myAspect1")
+				err = aspect.Remove("myAspect1")
+
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("returns an error if it doesnt exist", func() {
+				err := aspect.Remove("myAspect1")
+
+				Expect(err).To(MatchError("cannot delete aspect: does not exist"))
+			})
+
+		})
+
+		Context("when adding advice to an aspect", func() {
 			It("returns an error when function is nil", func() {
 				err := aspect.AddAdvice(nil, "before")
 				Expect(err).To(MatchError("cannot create advice: adviceFunction is invalid"))
@@ -86,6 +117,7 @@ var _ = Describe("aop", func() {
 				Expect(sum).To(Equal(x + y))
 			})
 		})
+
 		Context("when a pointcut is registered with after advice type", func() {
 			It("is called before the after advice", func() {
 				t := T{}
@@ -119,6 +151,7 @@ var _ = Describe("aop", func() {
 				Expect(sum).To(Equal(x + y))
 			})
 		})
+
 		Context("when a pointcut is registered with after-returning advice type", func() {
 			It("is called if the function does not return an error", func() {
 				t := T{}
