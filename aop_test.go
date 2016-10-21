@@ -1,8 +1,8 @@
-package goaop_test
+package gaop_test
 
 import (
 	"errors"
-	goaop "goAop"
+	gaop "gaop"
 	"math/rand"
 	"strings"
 
@@ -24,11 +24,11 @@ type T struct{}
 var _ = Describe("aop", func() {
 
 	var (
-		aspect goaop.Aspect
+		aspect gaop.Aspect
 	)
 
 	BeforeEach(func() {
-		aspect = goaop.Aspect{}
+		aspect = gaop.Aspect{}
 		out = ""
 	})
 
@@ -61,77 +61,93 @@ var _ = Describe("aop", func() {
 				Expect(err).To(MatchError("cannot delete aspect: does not exist"))
 			})
 
+			It("can be found by name", func() {
+
+				err := aspect.Create("myAspect1")
+				Expect(err).ToNot(HaveOccurred())
+
+				_, err = gaop.GetAspectByName("myAspect1")
+				Expect(err).ToNot(HaveOccurred())
+
+			})
+
+			It("gives error when not found by name", func() {
+
+				_, err := gaop.GetAspectByName("myAspect1")
+				Expect(err).ToNot(HaveOccurred())
+
+			})
 		})
 
 		Context("when adding advice to an aspect", func() {
 			It("returns an error when function is nil", func() {
-				err := aspect.AddAdvice(nil, goaop.ADVICE_BEFORE)
+				err := aspect.AddAdvice(nil, gaop.ADVICE_BEFORE)
 				Expect(err).To(MatchError("cannot create advice: adviceFunction is invalid"))
 			})
 
 			It("returns an error when adviceType is missing", func() {
-				notAnAdviceType := goaop.ADVICE_BEFORE + goaop.ADVICE_AFTER + goaop.ADVICE_AFTER_RETURNING
+				notAnAdviceType := gaop.ADVICE_BEFORE + gaop.ADVICE_AFTER + gaop.ADVICE_AFTER_RETURNING
 				err := aspect.AddAdvice(beforeAdvice, notAnAdviceType)
 				Expect(err).To(MatchError("cannot create advice: adviceType is invalid"))
 			})
 
 			It("succeeds when function and advice type are valid", func() {
-				err := aspect.AddAdvice(beforeAdvice, goaop.ADVICE_BEFORE)
+				err := aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("allows multiple advices to be added", func() {
 
-				err := aspect.AddAdvice(beforeAdvice, goaop.ADVICE_BEFORE)
-				err = aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER)
+				err := aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
+				err = aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("allows multiple advices to be added under the same advice type", func() {
 
-				err := aspect.AddAdvice(beforeAdvice, goaop.ADVICE_BEFORE)
+				err := aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = aspect.AddAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				err = aspect.AddAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = aspect.AddAdvice(beforeAdvice, goaop.ADVICE_AFTER_RETURNING)
+				err = aspect.AddAdvice(beforeAdvice, gaop.ADVICE_AFTER_RETURNING)
 				Expect(err).ToNot(HaveOccurred())
 
-				err = aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
+				err = aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("returns an error when the same advice is added under the same type more than once", func() {
 
-				err := aspect.AddAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				err := aspect.AddAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 
-				err = aspect.AddAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				err = aspect.AddAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 				Expect(err).To(MatchError("cannot create advice: adviceFunction already added for adviceType"))
 			})
 
 			It("can be removed after it is added", func() {
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 
-				err := aspect.RemoveAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				err := aspect.RemoveAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("returns error if you try to remove an advice that doesn't exist", func() {
 
-				err := aspect.RemoveAdvice(afterAdvice, goaop.ADVICE_BEFORE)
+				err := aspect.RemoveAdvice(afterAdvice, gaop.ADVICE_BEFORE)
 
 				Expect(err).To(MatchError("cannot delete advice: does not exist"))
 			})
 
 			It("doesnt delete advice if advice func & advice type match doesnt exist", func() {
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_BEFORE)
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_BEFORE)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
 
-				err := aspect.RemoveAdvice(afterAdvice, goaop.ADVICE_AFTER)
+				err := aspect.RemoveAdvice(afterAdvice, gaop.ADVICE_AFTER)
 
 				Expect(err).To(MatchError("cannot delete advice: does not exist"))
 			})
@@ -144,8 +160,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFunc
 
-				aspect.AddAdvice(beforeAdvice, goaop.ADVICE_BEFORE)
-				fnV, _ := aspect.AddPointcut("MyFunc", goaop.ADVICE_BEFORE, &t)
+				aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
+				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_BEFORE, &t)
 				aspect.Join(&fn, fnV)
 
 				fn()
@@ -162,8 +178,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.AddInts
 
-				aspect.AddAdvice(beforeAdvice, goaop.ADVICE_BEFORE)
-				fnV, _ := aspect.AddPointcut("AddInts", goaop.ADVICE_BEFORE, &t)
+				aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
+				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_BEFORE, &t)
 				aspect.Join(&fn, fnV)
 
 				x := rand.Int()
@@ -180,8 +196,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFunc
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER)
-				fnV, _ := aspect.AddPointcut("MyFunc", goaop.ADVICE_AFTER, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
+				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_AFTER, &t)
 				aspect.Join(&fn, fnV)
 
 				fn()
@@ -196,8 +212,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.AddInts
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER)
-				fnV, _ := aspect.AddPointcut("AddInts", goaop.ADVICE_AFTER, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
+				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_AFTER, &t)
 				aspect.Join(&fn, fnV)
 
 				x := rand.Int()
@@ -214,8 +230,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFunc
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFunc", goaop.ADVICE_AFTER_RETURNING, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 
 				fn()
@@ -229,8 +245,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFuncErr
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncErr", goaop.ADVICE_AFTER_RETURNING, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				fnV, _ := aspect.AddPointcut("MyFuncErr", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 
 				fn()
@@ -244,8 +260,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFuncInt
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncInt", goaop.ADVICE_AFTER_RETURNING, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				fnV, _ := aspect.AddPointcut("MyFuncInt", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 
 				fn()
@@ -259,8 +275,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFuncMultiReturns
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", goaop.ADVICE_AFTER_RETURNING, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 				fn()
 
@@ -273,9 +289,9 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.MyFuncMultiReturns
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
 
-				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", goaop.ADVICE_AFTER_RETURNING, &t)
+				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 
 				_, i, s, _, _ := fn()
@@ -291,8 +307,8 @@ var _ = Describe("aop", func() {
 				t := T{}
 				fn := t.AddInts
 
-				aspect.AddAdvice(afterAdvice, goaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("AddInts", goaop.ADVICE_AFTER_RETURNING, &t)
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_AFTER_RETURNING, &t)
 				aspect.Join(&fn, fnV)
 
 				x := rand.Int()

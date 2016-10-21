@@ -1,4 +1,4 @@
-package goaop
+package gaop
 
 import (
 	"errors"
@@ -27,7 +27,7 @@ type Advice struct {
 
 func (a *Aspect) Create(aspectName string) (err error) {
 
-	if a.Index(aspectName) != -1 {
+	if index(aspectName) != -1 {
 		return errors.New("cannot create aspect: name already used")
 	}
 
@@ -39,7 +39,7 @@ func (a *Aspect) Create(aspectName string) (err error) {
 
 func (a *Aspect) Remove(aspectName string) (err error) {
 
-	i := a.Index(aspectName)
+	i := index(aspectName)
 
 	if i != -1 {
 		aspects = append(aspects[:i], aspects[i+1:]...)
@@ -48,7 +48,7 @@ func (a *Aspect) Remove(aspectName string) (err error) {
 	return errors.New("cannot delete aspect: does not exist")
 }
 
-func (a *Aspect) Index(aspectName string) int {
+func index(aspectName string) int {
 
 	for i, aspect := range aspects {
 		if aspectName == aspect.Name {
@@ -56,6 +56,19 @@ func (a *Aspect) Index(aspectName string) int {
 		}
 	}
 	return -1
+}
+
+func GetAspectByName(name string) (a Aspect, err error) {
+
+	i := index(name)
+
+	if i != -1 {
+		a = aspects[i]
+
+		return
+	}
+
+	return a, errors.New("cannot find aspect: does not exist")
 }
 
 func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType AopAdviceType) (err error) {

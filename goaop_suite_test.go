@@ -1,4 +1,4 @@
-package goaop_test
+package gaop_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestGoAop(t *testing.T) {
+func TestGaop(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "GoAop Suite")
+	RunSpecs(t, "Gaop Suite")
 }
