@@ -1,3 +1,3 @@
 # goaop
 
-AOP library for golang. Currently a WIP. 
+AOP library for golang. Currently a WIP, probably until Go gives me pointers to void... 
