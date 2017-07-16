@@ -2,9 +2,10 @@ package gaop_test
 
 import (
 	"errors"
-	gaop "gaop"
 	"math/rand"
 	"strings"
+
+	"github.com/defrankland/gaop"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -18,8 +19,6 @@ const (
 var (
 	out string
 )
-
-type T struct{}
 
 var _ = Describe("aop", func() {
 
@@ -157,14 +156,11 @@ var _ = Describe("aop", func() {
 	Describe("aop pointcuts", func() {
 		Context("when a pointcut is registered with before advice type", func() {
 			It("is called after the before advice", func() {
-				t := T{}
-				fn := t.MyFunc
+				t := New()
 
 				aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
-				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_BEFORE, &t)
-				aspect.Join(&fn, fnV)
-
-				fn()
+				aspect.AddPointcut("MyFuncImpl", gaop.ADVICE_BEFORE, t, &t.MyFunc)
+				t.MyFunc()
 
 				By("checking the index of the pointcut and before messages")
 				idxBeforeMsg := strings.Index(out, msgBeforeAdvice)
@@ -175,17 +171,15 @@ var _ = Describe("aop", func() {
 
 			It("takes and returns correct values", func() {
 
-				t := T{}
-				fn := t.AddInts
+				t := New()
 
 				aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
-				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_BEFORE, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("AddIntsImpl", gaop.ADVICE_BEFORE, t, &t.AddInts)
 
 				x := rand.Int()
 				y := rand.Int()
 
-				sum := fn(x, y)
+				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
 			})
@@ -193,14 +187,12 @@ var _ = Describe("aop", func() {
 
 		Context("when a pointcut is registered with after advice type", func() {
 			It("is called before the after advice", func() {
-				t := T{}
-				fn := t.MyFunc
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
-				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_AFTER, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("MyFuncImpl", gaop.ADVICE_AFTER, t, &t.MyFunc)
 
-				fn()
+				t.MyFunc()
 
 				By("checking the index of the pointcut and after messages")
 				idxAfterMsg := strings.Index(out, msgAfterAdvice)
@@ -208,18 +200,17 @@ var _ = Describe("aop", func() {
 				Expect(idxAfterMsg).To(BeNumerically(">", idxFuncMsg))
 				Expect(idxAfterMsg).ToNot(BeNumerically("==", -1))
 			})
+
 			It("takes and returns correct values", func() {
-				t := T{}
-				fn := t.AddInts
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
-				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_AFTER, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("AddIntsImpl", gaop.ADVICE_AFTER, t, &t.AddInts)
 
 				x := rand.Int()
 				y := rand.Int()
 
-				sum := fn(x, y)
+				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
 			})
@@ -227,94 +218,87 @@ var _ = Describe("aop", func() {
 
 		Context("when a pointcut is registered with after-returning advice type", func() {
 			It("is called if the function does not return an error", func() {
-				t := T{}
-				fn := t.MyFunc
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFunc", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("MyFuncImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFunc)
 
-				fn()
+				t.MyFunc()
 
 				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
 				idxFuncMsg := strings.Index(out, "this is my function")
 				Expect(idxAfterReturningMsg).To(BeNumerically(">", idxFuncMsg))
 				Expect(idxAfterReturningMsg).ToNot(BeNumerically("==", -1))
 			})
+
 			It("is not called if the function returns an error", func() {
-				t := T{}
-				fn := t.MyFuncErr
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncErr", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("MyFuncErrImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFuncErr)
 
-				fn()
+				t.MyFuncErr()
 
 				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
 				idxFuncMsg := strings.Index(out, "this is my function")
 				Expect(idxFuncMsg).To(BeNumerically("==", 0))
 				Expect(idxAfterReturningMsg).To(BeNumerically("==", -1))
 			})
+
 			It("is called if the function returns an non-error type", func() {
-				t := T{}
-				fn := t.MyFuncInt
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncInt", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("MyFuncIntImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFuncInt)
 
-				fn()
+				t.MyFuncInt()
 
 				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
 				idxFuncMsg := strings.Index(out, "this is my function")
 				Expect(idxFuncMsg).To(BeNumerically("==", 0))
 				Expect(idxAfterReturningMsg).ToNot(BeNumerically("==", -1))
 			})
+
 			It("is not called for any error if the function returns several errors", func() {
-				t := T{}
-				fn := t.MyFuncMultiReturns
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
-				fn()
+				aspect.AddPointcut("MyFuncMultiReturnsImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFuncMultiReturns)
+
+				t.MyFuncMultiReturns()
 
 				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
 				idxFuncMsg := strings.Index(out, "this is my function")
 				Expect(idxFuncMsg).To(BeNumerically("==", 0))
 				Expect(idxAfterReturningMsg).To(BeNumerically("==", -1))
 			})
+
 			It("returns the functions return values", func() {
-				t := T{}
-				fn := t.MyFuncMultiReturns
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				aspect.AddPointcut("MyFuncMultiReturnsImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFuncMultiReturns)
 
-				fnV, _ := aspect.AddPointcut("MyFuncMultiReturns", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
+				err1, i, s, err2, err3 := t.MyFuncMultiReturns()
 
-				_, i, s, _, _ := fn()
-
-				idxAfterReturningMsg := strings.Index(out, msgAfterAdvice)
-				idxFuncMsg := strings.Index(out, "this is my function")
-				Expect(idxFuncMsg).To(BeNumerically("==", 0))
-				Expect(idxAfterReturningMsg).To(BeNumerically("==", -1))
 				Expect(i).To(Equal(5))
 				Expect(s).To(Equal("a string"))
+				Expect(err1).To(BeNil())
+				Expect(err2.Error()).To(Equal("error 2"))
+				Expect(err3.Error()).To(Equal("error 3"))
+
 			})
+
 			It("takes the provided arguments", func() {
-				t := T{}
-				fn := t.AddInts
+				t := New()
 
 				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
-				fnV, _ := aspect.AddPointcut("AddInts", gaop.ADVICE_AFTER_RETURNING, &t)
-				aspect.Join(&fn, fnV)
+				aspect.AddPointcut("AddIntsImpl", gaop.ADVICE_AFTER_RETURNING, t, &t.AddInts)
 
 				x := rand.Int()
 				y := rand.Int()
 
-				sum := fn(x, y)
+				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
 			})
@@ -330,27 +314,51 @@ func afterAdvice() {
 	out += msgAfterAdvice
 }
 
-func (t *T) MyFuncErr() error {
+type T struct {
+	funcs
+}
+
+type funcs struct {
+	MyFunc             func() error
+	MyFuncMultiReturns func() (error, int, string, error, error)
+	MyFuncInt          func() int
+	AddInts            func(x int, y int) int
+	MyFuncErr          func() error
+}
+
+func New() *T {
+
+	t := T{}
+	t.MyFunc = t.MyFuncImpl
+	t.MyFuncMultiReturns = t.MyFuncMultiReturnsImpl
+	t.MyFuncInt = t.MyFuncIntImpl
+	t.AddInts = t.AddIntsImpl
+	t.MyFuncErr = t.MyFuncErrImpl
+
+	return &t
+}
+
+func (t *T) MyFuncImpl() error {
+	out += "this is my function"
+	return nil
+}
+
+func (t *T) MyFuncErrImpl() error {
 	out += "this is my function"
 
 	return errors.New("test error return")
 }
 
-func (t *T) MyFuncMultiReturns() (error, int, string, error, error) {
+func (t *T) MyFuncMultiReturnsImpl() (error, int, string, error, error) {
 	out += "this is my function"
-	return nil, 5, "a string", errors.New("an error"), nil
+	return nil, 5, "a string", errors.New("error 2"), errors.New("error 3")
 }
 
-func (t *T) MyFuncInt() int {
+func (t *T) MyFuncIntImpl() int {
 	out += "this is my function"
 	return 5
 }
 
-func (t *T) MyFunc() error {
-	out += "this is my function"
-	return nil
-}
-
-func (t *T) AddInts(x int, y int) int {
+func (t *T) AddIntsImpl(x int, y int) int {
 	return x + y
 }

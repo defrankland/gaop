@@ -77,7 +77,9 @@ func (a *Aspect) AddAdvice(adviceFunction interface{}, adviceType AopAdviceType)
 
 		err = errors.New("cannot create advice: adviceFunction is invalid")
 
-	} else if adviceType != ADVICE_BEFORE && adviceType != ADVICE_AFTER && adviceType != ADVICE_AFTER_RETURNING {
+	} else if adviceType != ADVICE_BEFORE &&
+		adviceType != ADVICE_AFTER &&
+		adviceType != ADVICE_AFTER_RETURNING {
 
 		err = errors.New("cannot create advice: adviceType is invalid")
 
@@ -121,7 +123,19 @@ func (a *Aspect) GetAdviceIndex(adviceFunc interface{}, adviceType AopAdviceType
 	return -1
 }
 
-func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i interface{}) (fn func(args []Value) []Value, err error) {
+func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i, pointcut interface{}) (err error) {
+	fnV, err := a.addPointcutWorker(methodName, adviceType, i)
+
+	if err != nil {
+		return err
+	}
+
+	a.Join(pointcut, fnV)
+
+	return nil
+}
+
+func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, i interface{}) (fn func(args []Value) []Value, err error) {
 
 	if adviceType == ADVICE_BEFORE {
 
@@ -168,7 +182,6 @@ func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i inte
 
 			return returnValues
 		}
-
 	}
 
 	return
