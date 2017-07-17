@@ -131,7 +131,7 @@ func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i, poi
 		return err
 	}
 
-	a.Join(pointcut, fnV)
+	a.join(pointcut, fnV)
 
 	return nil
 }
@@ -162,7 +162,6 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 
 		fn = func(args []Value) []Value {
 			returnValues := m.Call(args)
-
 			adviceFunc()
 			return returnValues
 		}
@@ -170,7 +169,6 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 	} else if adviceType == ADVICE_AFTER_RETURNING {
 
 		fn = func(args []Value) []Value {
-
 			returnValues := m.Call(args)
 
 			for idx := 0; idx < len(returnValues); idx++ {
@@ -180,15 +178,13 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 			}
 
 			adviceFunc()
-
 			return returnValues
 		}
 	}
-
 	return
 }
 
-func (a *Aspect) Join(fptr interface{}, pointcut func([]Value) []Value) {
+func (a *Aspect) join(fptr interface{}, pointcut func([]Value) []Value) {
 
 	fn := ValueOf(fptr).Elem()
 	fn.Set(MakeFunc(fn.Type(), pointcut))
