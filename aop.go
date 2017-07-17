@@ -143,14 +143,18 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 		return nil, fmt.Errorf("no method matching name %s found on %T", methodName, i)
 	}
 
+	adviceFunc := func() {
+		for j, advice := range a.advices {
+			if advice.Type == adviceType {
+				a.advices[j].Method.Func.Call(nil)
+			}
+		}
+	}
+
 	if adviceType == ADVICE_BEFORE {
 
 		fn = func(args []Value) []Value {
-			for j, advice := range a.advices {
-				if advice.Type == ADVICE_BEFORE {
-					a.advices[j].Method.Func.Call(nil)
-				}
-			}
+			adviceFunc()
 			return m.Call(args)
 		}
 
@@ -159,11 +163,7 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 		fn = func(args []Value) []Value {
 			returnValues := m.Call(args)
 
-			for j, advice := range a.advices {
-				if advice.Type == ADVICE_AFTER {
-					a.advices[j].Method.Func.Call(nil)
-				}
-			}
+			adviceFunc()
 			return returnValues
 		}
 
@@ -171,7 +171,7 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 
 		fn = func(args []Value) []Value {
 
-			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
+			returnValues := m.Call(args)
 
 			for idx := 0; idx < len(returnValues); idx++ {
 				if returnValues[idx].Type() == TypeOf((*error)(nil)).Elem() && !returnValues[idx].IsNil() {
@@ -179,11 +179,7 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 				}
 			}
 
-			for j, advice := range a.advices {
-				if advice.Type == ADVICE_AFTER_RETURNING {
-					a.advices[j].Method.Func.Call(nil)
-				}
-			}
+			adviceFunc()
 
 			return returnValues
 		}
