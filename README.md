@@ -28,7 +28,14 @@ type Doggo struct {
 }
 
 func (d *Doggo) BarkImpl(numBarks int, gotChokedUp bool) error {
-	fmt.Println("BARK!!")
+
+	if gotChokedUp {
+		return errors.New("failed to bark.")
+	}
+
+	fmt.Println(strings.Repeat("BARK!! ", numBarks))
+
+	return nil
 }
 ```
 
