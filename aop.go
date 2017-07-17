@@ -2,6 +2,7 @@ package gaop
 
 import (
 	"errors"
+	"fmt"
 	. "reflect"
 )
 
@@ -124,8 +125,8 @@ func (a *Aspect) GetAdviceIndex(adviceFunc interface{}, adviceType AopAdviceType
 }
 
 func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i, pointcut interface{}) (err error) {
-	fnV, err := a.addPointcutWorker(methodName, adviceType, i)
 
+	fnV, err := a.addPointcutWorker(methodName, adviceType, i)
 	if err != nil {
 		return err
 	}
@@ -137,6 +138,11 @@ func (a *Aspect) AddPointcut(methodName string, adviceType AopAdviceType, i, poi
 
 func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, i interface{}) (fn func(args []Value) []Value, err error) {
 
+	m := ValueOf(i).MethodByName(methodName)
+	if !Value.IsValid(m) {
+		return nil, fmt.Errorf("no method matching name %s found on %T", methodName, i)
+	}
+
 	if adviceType == ADVICE_BEFORE {
 
 		fn = func(args []Value) []Value {
@@ -145,14 +151,13 @@ func (a *Aspect) addPointcutWorker(methodName string, adviceType AopAdviceType, 
 					a.advices[j].Method.Func.Call(nil)
 				}
 			}
-			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
-			return returnValues
+			return m.Call(args)
 		}
 
 	} else if adviceType == ADVICE_AFTER {
 
 		fn = func(args []Value) []Value {
-			returnValues := ValueOf(i).MethodByName(methodName).Call(args)
+			returnValues := m.Call(args)
 
 			for j, advice := range a.advices {
 				if advice.Type == ADVICE_AFTER {

@@ -154,6 +154,7 @@ var _ = Describe("aop", func() {
 	})
 
 	Describe("aop pointcuts", func() {
+
 		Context("when a pointcut is registered with before advice type", func() {
 			It("is called after the before advice", func() {
 				t := New()
@@ -182,6 +183,15 @@ var _ = Describe("aop", func() {
 				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
+			})
+
+			It("returns an error if the method does not exist", func() {
+				t := New()
+
+				aspect.AddAdvice(beforeAdvice, gaop.ADVICE_BEFORE)
+				err := aspect.AddPointcut("BadFuncName", gaop.ADVICE_BEFORE, t, &t.MyFunc)
+
+				Expect(err.Error()).To(Equal("no method matching name BadFuncName found on *gaop_test.T"))
 			})
 		})
 
@@ -213,6 +223,15 @@ var _ = Describe("aop", func() {
 				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
+			})
+
+			It("returns an error if the method does not exist", func() {
+				t := New()
+
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER)
+				err := aspect.AddPointcut("BadFuncName", gaop.ADVICE_AFTER, t, &t.MyFunc)
+
+				Expect(err.Error()).To(Equal("no method matching name BadFuncName found on *gaop_test.T"))
 			})
 		})
 
@@ -301,6 +320,15 @@ var _ = Describe("aop", func() {
 				sum := t.AddInts(x, y)
 
 				Expect(sum).To(Equal(x + y))
+			})
+
+			It("returns an error if the method does not exist", func() {
+				t := New()
+
+				aspect.AddAdvice(afterAdvice, gaop.ADVICE_AFTER_RETURNING)
+				err := aspect.AddPointcut("BadFuncName", gaop.ADVICE_AFTER_RETURNING, t, &t.MyFunc)
+
+				Expect(err.Error()).To(Equal("no method matching name BadFuncName found on *gaop_test.T"))
 			})
 		})
 	})
